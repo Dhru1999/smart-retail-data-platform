@@ -1,6 +1,9 @@
-CustomerID,CustomerName,Email,City
+# Intentional added messy data for practice
+CustomerID,Customer Name,Email,City
 1,John,john@gmail.com,Mumbai
 2,Alice,alice@gmail.com,Pune
-3,Bob,bob@gmail.com,Delhi
+3,Bob,,Delhi
 4,Rahul,rahul@gmail.com,Bangalore
-5,Priya,priya@gmail.com,Chennai
+4,Rahul,rahul@gmail.com,Bangalore
+5,Priya,priya@gmail.com,
+6, Ankit ,ANKIT@GMAIL.COM, Mumbai
