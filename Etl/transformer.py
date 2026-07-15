@@ -1,4 +1,4 @@
-# Tranform the data from the source format to the target format
+# Clean and Tranform the data from the source format to the target format
 import pandas as pd
 
 # function to clean column names of a DataFrame

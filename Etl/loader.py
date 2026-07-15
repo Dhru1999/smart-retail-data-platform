@@ -1,10 +1,11 @@
+# Loader module for the ETL pipeline. This module contains a function to load a Pandas DataFrame into a specified database table using SQLAlchemy.
+from venv import logger
 import pandas as pd
 from db import engine
-from logger import log
 
 # function to load a DataFrame into a database table
 def load_dataframe(df: pd.DataFrame,table_name: str):
-    print("Loading",table_name,"table...")
+    logger.info(f"Loading {table_name} table...")
     """
     Load a DataFrame into a database table.
 
@@ -21,5 +22,5 @@ def load_dataframe(df: pd.DataFrame,table_name: str):
          )
         print("Loaded",table_name,"with total rows:", len(df),"successfully.")
     except Exception as e:
-        log(f"Error loading DataFrame into table '{table_name}': {e}")
+        logger.error(f"Error loading DataFrame into table '{table_name}': {e}")
         raise
