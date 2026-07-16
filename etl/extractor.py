@@ -18,9 +18,6 @@ def extract_csv(filename: str) -> pd.DataFrame:
     except FileNotFoundError as e:
         logger.exception(f"File {filename} not found in {DATA_DIR}")
         raise ExtractError(f"File {filename} not found in {DATA_DIR}") from e
-    except Exception as e:
-        logger.exception(f"Failed to read {filename} from {DATA_DIR}")
-        raise ExtractError(f"Failed to read {filename} from {DATA_DIR}") from e
 
 def extract_customers():
     logger.info("Extracting customer data...")
