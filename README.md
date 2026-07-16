@@ -1,7 +1,5 @@
 # Smart Retail Data Platform
 
-[![pipeline](https://github.com/Dhru1999/smart-retail-data-platform/actions/workflows/pipeline.yml/badge.svg)](https://github.com/Dhru1999/smart-retail-data-platform/actions/workflows/pipeline.yml)
-
 **A retail ETL pipeline that refuses to load bad data, and tells you exactly what it rejected and why.**
 
 Most ETL demos load a clean CSV into a table and print "success". That's the easy half. The interesting half is what happens when row 3 has no email, row 4 is a duplicate, and row 6 has `Ankit` with the spaces still attached — which is what the sample data in `data/raw/` deliberately contains.
