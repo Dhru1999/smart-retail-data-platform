@@ -1,34 +1,26 @@
 # Reads data from CSV files in the raw data folder and returns it as Pandas DataFrames.
 from pathlib import Path
-from venv import logger
+from etl.logger import logger
 import pandas as pd
-from exceptions import ExtractError
+from etl.exceptions import ExtractError
 
-DATA_DTR = Path(__file__).resolve().parent.parent / "Data" / "raw"
-# Extractor function for ETL process
-#def extract():
-    # Simulate exracting new retail data
-    # Extracted_data = ["Customers..", "Products...", "Orders..."]
-    # for data in Extracted_data:
-    #     print(f"Extracting {data}")
+DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "raw"
+
 def extract_csv(filename: str) -> pd.DataFrame:
     """
     Read a CSV file from the raw data folder
     ARGS: filename : Name of the CSV file
     Returns: Pandas DataFrame.
-
     """
-    file_path = DATA_DTR/filename
-
-    """
-    Check validation for file existence
-    """
+    file_path = DATA_DIR / filename
     try:
         return pd.read_csv(file_path)
-    except Exception:
-        logger.error(f"File{filename} not found in {DATA_DTR}")
-        # raise ExtractError(f"File{filename} not found in {DATA_DTR}")
-    return pd.DataFrame()
+    except FileNotFoundError as e:
+        logger.exception(f"File {filename} not found in {DATA_DIR}")
+        raise ExtractError(f"File {filename} not found in {DATA_DIR}") from e
+    except Exception as e:
+        logger.exception(f"Failed to read {filename} from {DATA_DIR}")
+        raise ExtractError(f"Failed to read {filename} from {DATA_DIR}") from e
 
 def extract_customers():
     logger.info("Extracting customer data...")
