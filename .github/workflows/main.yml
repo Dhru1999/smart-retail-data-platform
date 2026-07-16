@@ -1,0 +1,102 @@
+name: pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  run:
+    name: Run pipeline against live Postgres
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    # A real database. Not a mock, not sqlite standing in for Postgres.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: retail
+          POSTGRES_PASSWORD: retail
+          POSTGRES_DB: retail
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U retail"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DB_HOST: localhost
+      DB_PORT: "5432"
+      DB_NAME: retail
+      DB_USER: retail
+      DB_PASSWORD: retail
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt pytest
+
+      - name: Unit tests
+        run: pytest -q
+
+      - name: Run pipeline
+        run: python -m etl.run_pipeline
+
+      - name: Publish data quality report
+        if: always()
+        run: cat reports/latest_run.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Assert the database actually got the right rows
+        run: |
+          python - <<'PY'
+          import os, sys
+          from sqlalchemy import create_engine, text
+
+          url = "postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}".format(**os.environ)
+          expected = {"customers": 4, "products": 5, "orders": 5}
+
+          failures = []
+          with create_engine(url).connect() as c:
+              for table, want in expected.items():
+                  got = c.execute(text(f"SELECT count(*) FROM {table}")).scalar()
+                  status = "ok" if got == want else "FAIL"
+                  print(f"{status:4} {table:10} expected {want}, got {got}")
+                  if got != want:
+                      failures.append(f"{table}: expected {want}, got {got}")
+
+          if failures:
+              print("\nPipeline did not load what it claimed.", file=sys.stderr)
+              sys.exit(1)
+          print("\nAll row counts match. The pipeline did what the README says.")
+          PY
+
+      - name: Upload quarantined rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quarantine
+          path: data/quarantine/
+          if-no-files-found: ignore
+
+      - name: Re-run to prove idempotency
+        run: |
+          python -m etl.run_pipeline
+          python - <<'PY'
+          import os, sys
+          from sqlalchemy import create_engine, text
+          url = "postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}".format(**os.environ)
+          with create_engine(url).connect() as c:
+              n = c.execute(text("SELECT count(*) FROM customers")).scalar()
+          if n != 4:
+              print(f"Not idempotent: second run left {n} rows, expected 4", file=sys.stderr)
+              sys.exit(1)
+          print("Second run left row counts unchanged. Pipeline is idempotent.")
+          PY
