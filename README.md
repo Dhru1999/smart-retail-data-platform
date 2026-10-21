@@ -27,7 +27,7 @@ The three quarantined rows, with reasons:
 | 4 | Rahul | rahul@gmail.com | Bangalore | `duplicate: customerid` |
 | 5 | Priya | priya@gmail.com | | `missing_required: city` |
 
-This table isn't pasted in by hand. It's regenerated on every run and published to the [Actions run summary](../../actions/workflows/pipeline.yml).
+This table isn't pasted in by hand. It's regenerated on every run and published to the [Actions run summary](../../actions/workflows/main.yml).
 
 ## Why the CI badge means something here
 
@@ -52,13 +52,15 @@ data/raw/*.csv
      ▼
  quality.validate(df, schema)
      │
-     ├──▶ clean rows ────▶ loader ────▶ PostgreSQL (upsert on key)
+     ├──▶ clean rows ────▶ loader ────▶ PostgreSQL (full refresh, one transaction)
      │
      └──▶ bad rows ──────▶ data/quarantine/*_rejects.csv
                                  │
                                  ▼
                           reports/latest_run.md ──▶ Actions summary
 ```
+
+Each load deletes and re-inserts the table's rows inside a single transaction, so a failed run leaves the previous data intact and a second run produces the same row counts.
 
 Schemas are declarative — a table is a list of `Column(name, dtype, required, unique, min_value)`. Adding a rule is one line, and the reject reason it produces is automatic.
 
@@ -80,7 +82,21 @@ Tests need no database:
 pytest -q
 ```
 
-Every test in `tests/` is a regression test for a bug that was genuinely in this repo — a `#` comment line hijacking the CSV header, a `Data/raw` path that only resolved on Windows, `fillna("Unknown")` silently turning an integer column into strings. They're there so those bugs can't come back.
+Every test in `tests/` is a regression test for a bug that was genuinely in this repo — a `#` comment line hijacking the CSV header, a `Data/raw` path that only resolved on Windows, `fillna("Unknown")` silently turning an integer column into strings, a second run appending duplicate rows. They're there so those bugs can't come back. `tests/test_pipeline.py` runs the whole pipeline on the sample data against an in-memory SQLite database; CI repeats it against real PostgreSQL.
+
+## Project layout
+
+```
+etl/
+  extractor.py     read data/raw/*.csv
+  quality.py       declarative schemas, validation, quarantine, Markdown report
+  loader.py        transactional full-refresh load into PostgreSQL
+  run_pipeline.py  orchestration and row-accounting check (exit code 1 on failure)
+  transformer.py   first-version cleaning helpers, kept for reference
+tests/             pytest suite (no database needed)
+data/raw/          sample input with deliberately messy rows
+docs/              daily learning notes from building the project
+```
 
 ## What I'd do next
 
