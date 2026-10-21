@@ -1,4 +1,6 @@
-# Clean and Tranform the data from the source format to the target format
+# Early cleaning helpers from the first version of the pipeline (Day 6).
+# The pipeline now validates with etl/quality.py instead; these functions are
+# kept for reference and are still covered by tests/test_transformer.py.
 import pandas as pd
 
 # function to clean column names of a DataFrame
@@ -47,7 +49,7 @@ def clean_text(df: pd.DataFrame) -> pd.DataFrame:
     Args:
         df (pd.DataFrame): The input DataFrame with dirty text data.
     """
-    object_columns = df.select_dtypes(include="object").columns
+    object_columns = df.select_dtypes(include=["object", "string"]).columns
     for column in object_columns:
         df[column] = (
             df[column].str.strip().str.lower()
