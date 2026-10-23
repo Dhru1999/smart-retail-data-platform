@@ -216,3 +216,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Pipeline outputs (regenerated on every run)
+data/quarantine/
+reports/
+logs/
